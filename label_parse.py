@@ -10,14 +10,21 @@ import numpy as np
 #             r"C:\Users\ALuo\PycharmProjects\CVphone\Annotations\users\tohme\cellphones\samsung_s4_active",
 #             r"C:\Users\ALuo\PycharmProjects\CVphone\Annotations\users\tohme\cellphones\xiaomi_note"]
 
-anno_dir = [r"C:\Users\ALuo\PycharmProjects\CVphone\collection\Annotations\users\tohme\cellphones\iphone4s"]
+anno_dir = [r"C:\Users\ALuo\PycharmProjects\CVphone\collection\Annotations\users\tohme\cellphones\samsung_s4_active",
+            r"C:\Users\ALuo\PycharmProjects\CVphone\collection\Annotations\users\tohme\cellphones\htc_ones",
+            r"C:\Users\ALuo\PycharmProjects\CVphone\collection\Annotations\users\tohme\cellphones\iphone3gs",
+            r"C:\Users\ALuo\PycharmProjects\CVphone\collection\Annotations\users\tohme\cellphones\iphone4",
+            r"C:\Users\ALuo\PycharmProjects\CVphone\collection\Annotations\users\tohme\cellphones\iphone4s",
+            r"C:\Users\ALuo\PycharmProjects\CVphone\collection\Annotations\users\tohme\cellphones\xiaomi_note"]
 anno_files = [list(map(lambda x: os.path.join(a,x),os.listdir(a))) for a in anno_dir]
 anno_files = sum(anno_files, [])
 
+# anno_files = [r"C:\Users\ALuo\PycharmProjects\CVphone\collection\Annotations\users\tohme\cellphones\samsung_s4_active\layer11.xml"]
+
 
 obj_set = ["motherboard", "battery", "board", "sim holder", "side button",
-               "button", "microphone", "speaker", "charging port",
-               "motor", "jack", "cover", "back cover", "screen",
+               "microphone", "speaker", "charging port",
+               "motor", "jack", "cover", "back cover", "screen","button",
                "cable", "camera", "screw", "connector"]
 
 num_unique_objs = len(obj_set)
@@ -41,7 +48,7 @@ def resize_crop(input_img, new_size = [400, 600], method = 0):
     return resized_img
 
 
-scale = 0.2
+scale = 0.5
 def extract_poly(dict_input):
     points = []
     poly = dict_input["polygon"]["pt"]
@@ -83,6 +90,8 @@ for i in range(len(anno_files)):
                 current_name = "motor"
             elif "connector" in parsed["annotation"]["object"][j]["name"].lower():
                 current_name = "connector"
+            elif "button" in parsed["annotation"]["object"][j]["name"].lower() and "side" not in parsed["annotation"]["object"][j]["name"].lower():
+                current_name = "button"
             else:
                 current_name = parsed["annotation"]["object"][j]["name"].lower()
 
@@ -101,6 +110,8 @@ for i in range(len(anno_files)):
                 canvas = Image.fromarray(other_container)
                 ImageDraw.Draw(canvas).polygon(polygon_coors, outline=1, fill=1)
                 other_container += np.array(canvas)
+            print(parsed["annotation"]["object"][j]["name"], "LABEL NAME")
+            print(np.sum(labels_container[13, :, :]), "BUTTON SUM")
     else:
         #if "assembly" not in parsed["annotation"]["object"]["name"].lower() and parsed["annotation"]["object"]["deleted"] not in ["1", 1]:
         if parsed["annotation"]["object"]["deleted"] not in ["1", 1]:
@@ -121,6 +132,8 @@ for i in range(len(anno_files)):
                 current_name = "motor"
             elif "connector" in parsed["annotation"]["object"]["name"].lower():
                 current_name = "connector"
+            elif "button" in parsed["annotation"]["object"]["name"].lower() and "side" not in parsed["annotation"]["object"]["name"].lower():
+                current_name = "button"
             else:
                 current_name = parsed["annotation"]["object"]["name"].lower()
             # if (current_name not in obj_set) and "frame" not in current_name and "case" not in current_name:
@@ -141,7 +154,6 @@ for i in range(len(anno_files)):
                 canvas = Image.fromarray(other_container)
                 ImageDraw.Draw(canvas).polygon(polygon_coors, outline=1, fill=1)
                 other_container += np.array(canvas)
-
     outline_labels = np.sum(labels_container, axis= 0)>0.5
     outline_general = other_container>0.5
     general = np.logical_and(np.logical_or(outline_general, outline_labels), np.logical_not(outline_labels))
@@ -163,19 +175,20 @@ for i in range(len(anno_files)):
     # print(added_arr)
     #np.save(os.path.join(r"C:\Users\ALuo\PycharmProjects\CVphone\annotations", os.path.basename(os.path.dirname(anno_files[i]))) + "_" + os.path.splitext(os.path.basename(anno_files[i]))[0], added_arr)
     # print(np.shape(labels_container), "SHAPE")
-    # print("SHAPE", np.shape(added_arr), added_arr.dtype)
     added_arr=resize_crop(added_arr)
     added_arr = added_arr.astype(np.bool)
+    # print("SHAPE", np.shape(added_arr), added_arr.dtype)
     if not os.path.isdir(os.path.join(r"C:\Users\ALuo\PycharmProjects\CVphone\annotations", os.path.basename(os.path.dirname(anno_files[i])))):
         os.mkdir(os.path.join(r"C:\Users\ALuo\PycharmProjects\CVphone\annotations", os.path.basename(os.path.dirname(anno_files[i]))))
 
     np.save(os.path.join(os.path.join(r"C:\Users\ALuo\PycharmProjects\CVphone\annotations", os.path.basename(os.path.dirname(anno_files[i]))),
             os.path.splitext(os.path.basename(anno_files[i]))[0]), added_arr)
+    print("saved")
     # plt.figure(1)
     # plt.subplot(411)
     # plt.imshow(np.sum(added_arr[:, :, 0:-2], axis=2))
     # plt.subplot(412)
-    # plt.imshow(added_arr[:, :, -2])
+    # plt.imshow(added_arr[:, :, 13])
     # plt.subplot(413)
     # plt.imshow(added_arr[:, :, -1])
     # plt.subplot(414)
